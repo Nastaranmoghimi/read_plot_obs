@@ -34,8 +34,21 @@ import cartopy.feature as cfeature
 from matplotlib.offsetbox import AnchoredText
 
 
+from matplotlib.path import Path
+
 ###functions
-def get_ind(lim,lons,lats):
+def get_ind_rect(lim,lons,lats):
+    """
+    Return index of points inside a rectangle
+    
+    Input:
+    lim: 
+    lons and lats: data poits coordinates
+    
+    Output:
+    ind: index of points inside rectangle
+    
+    """
     
     [ind] = np.where((lons > lim['xmin']) & 
                     ( lons < lim['xmax']) & 
@@ -45,14 +58,29 @@ def get_ind(lim,lons,lats):
     return ind
 
 
-def get_ind_bou(bou_lons,bou_lats,lons,lats):
+def get_ind_poly(lons_bound,lats_bound,lons,lats):
+    """
+    Return index of points inside a polygon
     
-    [ind] = np.where((lons > lim['xmin']) & 
-                    ( lons < lim['xmax']) & 
-                    ( lats > lim['ymin']) & 
-                    ( lats < lim['ymax']))
+    Input:
+    bou_lons,bou_lats:  
+    lons and lats: data poits coordinates
     
-    return ind
+    Output:
+    ind: index of points inside rectangle
+    
+    
+    """
+
+    vertices = np.c_[lons_bound,lats_bound]
+    p    = Path(vertices)
+
+    data = np.c_[lons, lats]
+    mask = p.contains_points(data)
+
+    ind = np.where(mask==True)
+    return ind[0]
+
 
 
 
@@ -104,13 +132,19 @@ def make_map(projection=ccrs.PlateCarree()):
 
 
 def wait():
+    """
+    
+    """
     while True:
         choice = input("Enter bb when you are done .. > ")
         if choice == 'bb' :
             break
 
 
-def create_boundary(name = 'texas', region = region):
+def create_boundary(name = 'texas', region = {}):
+    """
+    
+    """
     lim = region[name]
     filename = name + '_bou.txt'
 
@@ -142,9 +176,10 @@ def create_boundary(name = 'texas', region = region):
 
 
 
-
-
 #### MAIN
+bou_type = 'poly'
+#bou_type = 'rect'
+
 region = defaultdict(dict)
 #####
 name = 'us'
@@ -170,6 +205,8 @@ lim = region['texas']
 
 
 
+if bou_type == 'poly':
+    lons_bou,lats_bou = create_boundary(name = name, region = region)
 
 
 inp_dir = 'inp/'
@@ -179,11 +216,6 @@ print ('Read ...')
 #purple_stations_info_file = inp_dir + 'PurpleAir_Locations.xlsx'
 #purp_infos = pd.read_excel(purple_stations_info_file)
 #
-
-
-
-
-
 
 print ('Read XLS')
 #read purple exel file                                                                                                                                                              
@@ -195,8 +227,6 @@ purp_infos = pd.read_excel(purple_stations_info_file)
 json_file = inp_dir + 'purpuleair.json'
 purp_jsonall = pd.read_json(json_file)
 #
-
-
 
 purp_outside = defaultdict(dict)
 
@@ -220,7 +250,6 @@ for il in range (len( purp_jsonall)):
     except:
         print ('===None')
 #############################################
-
 for sta_id in purp_outside.keys():
     print(sta_id)
     for id1 in purp_infos.index:
@@ -228,13 +257,12 @@ for sta_id in purp_outside.keys():
             purp_outside[sta_id]['lat']= purp_infos['Lat'][id1]
             purp_outside[sta_id]['lon']= purp_infos['Lon'][id1]
 
-
 #####
 purp_in_lim = defaultdict(dict)
 for key in purp_outside.keys():
     lons = purp_outside [key]['lon']       
     lats = purp_outside [key]['lat']       
-
+   
     try:
         if ((lons > lim['xmin']) & ( lons < lim['xmax']) & ( lats > lim['ymin']) & (lats < lim['ymax'])):
             purp_in_lim [key]  = purp_outside [key]
@@ -250,7 +278,7 @@ id_sta   = []
 lon_sta  = []
 lat_sta  = []
 labels   = []
-
+##############################################
 
 for key in purp_in_lim.keys():
     id_sta.append (key)
@@ -267,9 +295,29 @@ labels   = np.array(labels)
 data_sta = np.c_[id_sta,lon_sta,lat_sta,labels]
 
 df = pd.DataFrame(data=data_sta,columns=['id','lon','lat','label'])
-df.to_csv(lim['name'] + '_purple_air.csv',index=False)
+df.to_csv(name + '_purple_air.csv',index=False)
 
 ################################# end prepare csv ######################
+#read EPA locations from csv                                                                                                                                                         
+epa_pm10_info_file = inp_dir + 'PM10.csv'
+epa_pm10_locs      = pd.read_csv(epa_pm10_info_file)
+
+epa_pm25_info_file = inp_dir + 'PM25.csv'
+epa_pm25_locs      = pd.read_csv(epa_pm25_info_file)
+
+print ('get index ...')
+#get index of obs sites inside epecific window LIM
+
+
+if bou_type != 'poly':
+    epa_ind_pm10 = get_ind_rect(lim=lim,lons=epa_pm10_locs['lon'][:],lats=epa_pm10_locs['lat'][:])
+    epa_ind_pm25 = get_ind_rect(lim=lim,lons=epa_pm25_locs['lon'][:],lats=epa_pm25_locs['lat'][:])
+else:
+    epa_ind_pm10 = get_ind_poly(lons_bound = lons_bou,lats_bound=lats_bou,lons =epa_pm10_locs['lon'][:] ,lats=epa_pm10_locs['lat'][:])
+    epa_ind_pm25 = get_ind_poly(lons_bound = lons_bou,lats_bound=lats_bou,lons =epa_pm25_locs['lon'][:] ,lats=epa_pm25_locs['lat'][:])
+
+
+
 
 #plot stations
 print ('Static Cartopy map ...')
@@ -291,22 +339,10 @@ ax.set_ylim(lim['ymin'],lim['ymax'])
 plt.savefig('purpule_outside.png',dpi=450)
 plt.show()
 #plt.close('all')
+#######################################################################
 
 
 
-
-#read EPA locations from csv                                                                                                                                                         
-epa_pm10_info_file = inp_dir + 'PM10.csv'
-epa_pm10_locs      = pd.read_csv(epa_pm10_info_file)
-
-epa_pm25_info_file = inp_dir + 'PM25.csv'
-epa_pm25_locs      = pd.read_csv(epa_pm25_info_file)
-
-print ('get index ...')
-#get index of obs sites inside epecific window LIM
-
-epa_ind_pm10 = get_ind(lim=lim,lons=epa_pm10_locs['lon'][:],lats=epa_pm10_locs['lat'][:])
-epa_ind_pm25 = get_ind(lim=lim,lons=epa_pm25_locs['lon'][:],lats=epa_pm25_locs['lat'][:])
 
 
 
@@ -314,7 +350,7 @@ epa_ind_pm25 = get_ind(lim=lim,lons=epa_pm25_locs['lon'][:],lats=epa_pm25_locs['
 to_drop = np.setdiff1d (ar1=epa_pm10_locs.index,ar2=epa_ind_pm10)
 epa_pm10_locs_lim = epa_pm10_locs.copy()
 epa_pm10_locs_lim = epa_pm10_locs_lim.drop(to_drop)
-epa_pm10_locs_lim.to_csv(lim['name'] +'_epa_pm10.csv',columns = ['Name', 'lon', 'lat'],index=False)
+epa_pm10_locs_lim.to_csv(name +'_epa_pm10.csv',columns = ['Name', 'lon', 'lat'],index=False)
 ##############
 
 
@@ -324,7 +360,7 @@ epa_pm10_locs_lim.to_csv(lim['name'] +'_epa_pm10.csv',columns = ['Name', 'lon', 
 to_drop = np.setdiff1d (ar1=epa_pm25_locs.index,ar2=epa_ind_pm25)
 epa_pm25_locs_lim = epa_pm25_locs.copy()
 epa_pm25_locs_lim = epa_pm25_locs_lim.drop(to_drop)
-epa_pm25_locs_lim.to_csv(lim['name'] +'_epa_pm25.csv',columns = ['Name', 'lon', 'lat'],index=False)
+epa_pm25_locs_lim.to_csv(name +'_epa_pm25.csv',columns = ['Name', 'lon', 'lat'],index=False)
 
 
 #plot stations
