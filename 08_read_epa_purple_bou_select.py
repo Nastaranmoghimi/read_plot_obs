@@ -56,10 +56,6 @@ def get_ind_bou(bou_lons,bou_lats,lons,lats):
 
 
 
-
-
-
-
 def make_map(projection=ccrs.PlateCarree()):                                                                                                                                        
                                                                                            
     """                                                                          
@@ -106,81 +102,12 @@ def make_map(projection=ccrs.PlateCarree()):
     ax.set_ylim( 20 , 55)  #lat limits   
     return fig, ax
 
-from grid import BoundaryInteractor
-def generate_boundary_file(state = 'texas', lim = lim):
-    
 
-
-
-
-#### MAIN
-region = defaultdict(dict)
-#####
-name = 'us'
-region[name]['xmin']  = -125.0
-region[name]['xmax']  = -55.
-region[name]['ymin']  =  15.0
-region[name]['ymax']  =  46.3
-
-name = 'texas'
-region[name]['xmin']  = -107.0
-region[name]['xmax']  = -92.9
-region[name]['ymin']  =  24.0
-region[name]['ymax']  =  38.1
-
-
-name = 'arizona'
-region[name]['xmin']  = -114.85
-region[name]['xmax']  = -108.9
-region[name]['ymin']  =  31.1
-region[name]['ymax']  =  37.1
-
-
-
-
-
-
-lim = region['texas']
-
-
-
-
-
-
-
-def write_cnt_xy(filename = 'points.py',interactive_line = None):
-    f = open(filename,'w')
-    f.write('x = [')
-    for ix in range(len(cnt_line.x)):
-        f.write('    '+str(cnt_line.x[ix])+',\n')
-    f.write    ('    ]\n')
-    #
-    f.write('y = [')
-    for ix in range(len(cnt_line.x)):
-        f.write('    '+str(cnt_line.y[ix])+',\n')
-    f.write    ('    ]\n')
- 
-    f.write('xx = [')
-    for ix in range(len(cnt_line.xx)):
-        f.write('    '+str(cnt_line.xx[ix])+',\n')
-    f.write    ('    ]\n')
-    #
-    f.write('yy = [')
-    for ix in range(len(cnt_line.xx)):
-        f.write('    '+str(cnt_line.yy[ix])+',\n')
-    f.write    ('    ]\n')
-    f.close()
-    
 def wait():
     while True:
         choice = input("Enter bb when you are done .. > ")
         if choice == 'bb' :
             break
-
-
-
-
-
 
 
 def create_boundary(name = 'texas', region = region):
@@ -216,49 +143,30 @@ def create_boundary(name = 'texas', region = region):
 
 
 
-def creat_center_line(lim = lim):
-cwd      = os.getcwd()
-fname    = 'points.py'
-filename = cwd + '/' + fname
-if (not os.path.exists(filename)):
-    # Just a test we need to replace this with a plan plot of the river
-     
-    fig,ax = make_map()   
-    ax. 
-    cnt_line = pl_tools.InteractiveLine(type='cblin')
-    plt.show()
-    wait()
-     
-    write_cnt_xy(filename = filename, interactive_line = cnt_line)
-else:
-    try: 
-        os.system('rm '+fname+'c'  )
-    except:
-        pass
-     
-    if fname[:-3] in sys.modules:  
-        del(sys.modules[fname[:-3]])
-     
-    import points
-    
-    return points.xx,points.yy 
+
+#### MAIN
+region = defaultdict(dict)
+#####
+name = 'us'
+region[name]['xmin']  = -125.0
+region[name]['xmax']  = -55.
+region[name]['ymin']  =  15.0
+region[name]['ymax']  =  46.3
+
+name = 'texas'
+region[name]['xmin']  = -107.0
+region[name]['xmax']  = -92.9
+region[name]['ymin']  =  24.0
+region[name]['ymax']  =  38.1
 
 
+name = 'arizona'
+region[name]['xmin']  = -114.85
+region[name]['xmax']  = -108.9
+region[name]['ymin']  =  31.1
+region[name]['ymax']  =  37.1
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+lim = region['texas']
 
 
 
